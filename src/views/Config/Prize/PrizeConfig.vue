@@ -7,7 +7,7 @@ import EditSeparateDialog from '@/components/NumberSeparate/EditSeparateDialog.v
 import PageHeader from '@/components/PageHeader/index.vue'
 import { usePrizeConfig } from './usePrizeConfig'
 
-const { addPrize, resetDefault, delAll, delItem, prizeList, currentPrize, selectedPrize, submitData, changePrizePerson, changePrizeStatus, selectPrize, localImageList } = usePrizeConfig()
+const { addPrize, resetDefault, delAll, delItem, prizeList, currentPrize, selectedPrize, submitData, changePrizePerson, changePrizeStatus, selectPrize, localImageList, getAllPersonList } = usePrizeConfig()
 const { t } = useI18n()
 </script>
 
@@ -134,6 +134,16 @@ const { t } = useI18n()
             </ul>
             <button v-else class="btn btn-secondary btn-xs">{{ t('button.setting') }}</button>
           </div>
+        </label>
+        <label class="w-full max-w-xs form-control">
+          <div class="label">
+            <span class="label-text">内定人员</span>
+          </div>
+          <select v-model="item.designatedList" class="truncate select select-warning select-sm" multiple size="1">
+            <option v-for="personItem in getAllPersonList" :key="personItem.id" :title="personItem.name" class="w-full max-w-full" :value="personItem">
+              <span class="truncate w-option-xs">{{ personItem.name }}</span>
+            </option>
+          </select>
         </label>
         <label class="w-full max-w-xs form-control">
           <div class="label">

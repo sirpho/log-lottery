@@ -21,7 +21,7 @@ export interface Separate {
     isUsedCount: number
 }
 export interface IPrizeConfig {
-    id: number | string
+    id: string
     name: string
     sort: number
     isAll: boolean
@@ -36,6 +36,7 @@ export interface IPrizeConfig {
         enable: boolean
         countList: Separate[]
     }
+    designatedList: any[]
     desc: string
     isShow: boolean
     isUsed: boolean

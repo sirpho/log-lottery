@@ -14,6 +14,7 @@ export function usePrizeConfig() {
     })
     const prizeConfig = useStore().prizeConfig
     const globalConfig = useStore().globalConfig
+    const getAllPersonList = useStore().personConfig.getAllPersonList
     const { getPrizeConfig: localPrizeList, getCurrentPrize: currentPrize } = storeToRefs(prizeConfig)
 
     const { getImageList: localImageList } = storeToRefs(globalConfig)
@@ -136,5 +137,6 @@ export function usePrizeConfig() {
         changePrizeStatus,
         selectPrize,
         localImageList,
+        getAllPersonList
     }
 }

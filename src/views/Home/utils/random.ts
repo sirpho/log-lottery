@@ -23,23 +23,10 @@ function shuffleBrowserCrypto<T>(array: T[]): T[] {
     return newArray
 }
 
-/**
- * @description 从源数组中随机获取指定数量的元素
- * @param {Array} sourceArray 源数组
- * @param {number} count 要获取的元素数量
- * @returns {Array} 随机获取的元素
- */
-
-export function getRandomElements<T>(sourceArray: T[], count: number): T[] {
-    if (count <= 0)
-        return []
-    if (count >= sourceArray.length) {
-        return shuffleBrowserCrypto([...sourceArray])
-    } // 抽全部=洗牌
-
-    const newArray = [...sourceArray]
-    const result: T[] = []
-
+function getRandom(result: any[], count: number, newArray: any[]) {
+    if (newArray.length <= 0) {
+        return
+    }
     // 抽取 count 个元素，每轮选一个随机索引加入结果，然后从原数组移除
     for (let i = 0; i < count; i++) {
         const randomBuffer = new Uint32Array(1)
@@ -51,6 +38,34 @@ export function getRandomElements<T>(sourceArray: T[], count: number): T[] {
         // 从原数组中移除已选中的元素，避免重复选择
         newArray.splice(randomIndex, 1)
     }
+}
+
+/**
+ * @description 从源数组中随机获取指定数量的元素
+ * @param {Array} sourceArray 源数组
+ * @param {number} count 要获取的元素数量
+ * @param {Array} designatedPersonList 内定人员
+ * @returns {Array} 随机获取的元素
+ */
+
+export function getRandomElements(sourceArray: any[], count: number, designatedPersonList?: any[]): any[] {
+    if (count <= 0)
+        return []
+    if (count >= sourceArray.length) {
+        return shuffleBrowserCrypto([...sourceArray])
+    } // 抽全部=洗牌
+
+    const result: any[] = []
+
+    const designatedPersonIds = designatedPersonList?.map(item => item.id) || []
+    // 去掉已经在必中名单中的
+    sourceArray = sourceArray.filter(item => !designatedPersonIds.includes(item.id))
+
+    // 先抽必中的
+    getRandom(result, count, [...(designatedPersonList || [])])
+    // 剩下的
+    const leftCount = count - designatedPersonIds.length
+    getRandom(result, leftCount, [...sourceArray])
 
     return result
 }

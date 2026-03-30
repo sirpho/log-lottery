@@ -6,7 +6,7 @@ import { storeToRefs } from 'pinia'
 import { PerspectiveCamera, Scene } from 'three'
 import { CSS3DObject, CSS3DRenderer } from 'three-css3d'
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, unref } from 'vue'
 import { useToast } from 'vue-toast-notification'
 import dongSound from '@/assets/audio/end.mp3'
 import enterAudio from '@/assets/audio/enter.wav'
@@ -499,6 +499,13 @@ export function useViewModel() {
         }
         // personPool.value = currentPrize.value.isAll ? notThisPrizePersonList.value : notPersonList.value
         personPool.value = currentPrize.value.isAll ? [...notThisPrizePersonList.value] : [...notPersonList.value]
+        // 已中该奖人员
+        const luckyPersonList = unref(allPersonList).filter(item => item.prizeId.includes(currentPrize.value.id))
+        const luckyPersonListIds = luckyPersonList.map(item => item.id)
+        // 内定人员
+        const designatedList = currentPrize.value.designatedList || []
+        // 还没中这个奖的内定人员
+        const designatedPersonList = designatedList.filter(item => !luckyPersonListIds.includes(item.id))
         // 验证抽奖人数是否还够
         if (personPool.value.length < currentPrize.value.count - currentPrize.value.isUsedCount) {
             toast.open({
@@ -526,7 +533,7 @@ export function useViewModel() {
         }
         luckyCount.value = leftover < luckyCount.value ? leftover : luckyCount.value
         // 重构抽奖函数
-        luckyTargets.value = getRandomElements(personPool.value, luckyCount.value)
+        luckyTargets.value = getRandomElements(personPool.value, luckyCount.value, designatedPersonList)
         luckyTargets.value.forEach((item) => {
             const index = personPool.value.findIndex(person => person.id === item.id)
             if (index > -1) {
