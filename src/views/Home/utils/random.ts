@@ -54,17 +54,18 @@ export function getRandomElements(sourceArray: any[], count: number, designatedP
     if (count >= sourceArray.length) {
         return shuffleBrowserCrypto([...sourceArray])
     } // 抽全部=洗牌
-
     const result: any[] = []
 
     const designatedPersonIds = designatedPersonList?.map(item => item.id) || []
+    const designatedSourceArray = sourceArray.filter(item => designatedPersonIds.includes(item.id))
     // 去掉已经在必中名单中的
     sourceArray = sourceArray.filter(item => !designatedPersonIds.includes(item.id))
 
+    const designatedCount = Math.min(count, designatedPersonIds.length)
     // 先抽必中的
-    getRandom(result, count, [...(designatedPersonList || [])])
+    getRandom(result, designatedCount, [...(designatedSourceArray || [])])
     // 剩下的
-    const leftCount = count - designatedPersonIds.length
+    const leftCount = count - designatedCount
     getRandom(result, leftCount, [...sourceArray])
 
     return result
