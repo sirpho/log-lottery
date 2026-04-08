@@ -18,7 +18,7 @@ import useStore from '@/store'
 import { selectCard } from '@/utils'
 import { rgba } from '@/utils/color'
 import { LotteryStatus } from './type'
-import { confettiFire, createSphereVertices, createTableVertices, getRandomElements, initTableData } from './utils'
+import { confettiFire, createCylinderVertices, createTableVertices, getRandomElements, initTableData } from './utils'
 
 const maxAudioLimit = 10
 export function useViewModel() {
@@ -47,6 +47,7 @@ export function useViewModel() {
         getWinMusic: isPlayWinMusic,
     } = storeToRefs(globalConfig)
     // three初始值
+    const ballRotationX = ref(0)
     const ballRotationY = ref(0)
     const containerRef = ref<HTMLElement>()
     const canOperate = ref(true)
@@ -169,11 +170,15 @@ export function useViewModel() {
             objects.value.push(object)
         }
         // 创建横铺的界面
-        const tableVertices = createTableVertices({ tableData: tableData.value, rowCount: rowCount.value, cardSize: cardSize.value })
-        targets.table = tableVertices
+        targets.table = createTableVertices({
+            tableData: tableData.value,
+            rowCount: rowCount.value,
+            cardSize: cardSize.value,
+        })
         // 创建球体
-        const sphereVertices = createSphereVertices({ objectsLength: objects.value.length })
-        targets.sphere = sphereVertices
+        // targets.sphere = createSphereVertices({ objectsLength: objects.value.length })
+        // 创建圆柱体
+        targets.sphere = createCylinderVertices()
         window.addEventListener('resize', onWindowResize, false)
         transform(targets.table, 1000)
         render()
@@ -270,21 +275,23 @@ export function useViewModel() {
     }
     /**
      * @description: 旋转的动画
+     * @param rotateX 绕x轴旋转圈数
      * @param rotateY 绕y轴旋转圈数
      * @param duration 持续时间，单位秒
      */
-    function rollBall(rotateY: number, duration: number) {
+    function rollBall(rotateX: number, rotateY: number, duration: number) {
         TWEEN.removeAll()
 
         return new Promise((resolve) => {
             scene.value.rotation.y = 0
             ballRotationY.value = Math.PI * rotateY * 1000
+            ballRotationX.value = Math.PI * rotateX * 1000
             const rotateObj = new TWEEN.Tween(scene.value.rotation)
             rotateObj
                 .to(
                     {
-                        // x: Math.PI * rotateX * 1000,
-                        x: 0,
+                        x: ballRotationX.value,
+                        // x: 0,
                         y: ballRotationY.value,
                         // z: Math.PI * rotateZ * 1000
                         z: 0,
@@ -477,7 +484,7 @@ export function useViewModel() {
         canOperate.value = false
         await transform(targets.sphere, 1000)
         currentStatus.value = LotteryStatus.ready
-        rollBall(0.1, 2000)
+        rollBall(0.1, 0, 2000)
     }
     /**
      * @description 开始抽奖
@@ -553,7 +560,7 @@ export function useViewModel() {
         startLotteryMusic()
 
         currentStatus.value = LotteryStatus.running
-        rollBall(10, 3000)
+        rollBall(2, 0, 3000)
         if (definiteTime.value) {
             setTimeout(() => {
                 if (currentStatus.value === LotteryStatus.running) {
@@ -578,7 +585,7 @@ export function useViewModel() {
         //   clearInterval(intervalTimer.value)
         //   intervalTimer.value = null
         canOperate.value = false
-        rollBall(0, 1)
+        rollBall(0, 0, 0)
 
         const windowSize = { width: window.innerWidth, height: window.innerHeight }
         luckyTargets.value.forEach((person: IPersonConfig, index: number) => {

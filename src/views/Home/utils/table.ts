@@ -74,6 +74,47 @@ export function createSphereVertices({ objectsLength }: { objectsLength: number 
     return resObjects
 }
 
+/**
+ * @description 创建圆柱体
+ * @returns Object3D[]
+ */
+export function createCylinderVertices(): Object3D[] {
+    const resObjects: Object3D[] = []
+    const radius = 800
+    const length = 800
+    const ringCount = 5
+    const objectsLength = 124
+    const perRing = Math.floor(objectsLength / ringCount)
+
+    for (let i = 0; i < objectsLength; ++i) {
+        const ringIndex = Math.floor(i / perRing)
+        const indexInRing = i % perRing
+
+        const stepX = length / (ringCount - 1)
+        const x = -length / 2 + ringIndex * stepX
+
+        const angle = (indexInRing / perRing) * Math.PI * 2
+        const y = Math.cos(angle)
+        const z = Math.sin(angle)
+
+        const object = new Object3D()
+        object.position.set(x, radius * y, radius * z)
+
+        // 目标点为位置 + 径向法线 * 2（确保朝外）
+        const target = new Vector3()
+        target.copy(object.position).add(new Vector3(0, y, z).multiplyScalar(2))
+
+        // 默认 lookAt 会尽量保持 Y 轴向上，这可能导致顶部/底部卡片旋转，但圆柱侧面正常
+        object.lookAt(target)
+
+        // 如果需要让卡片的上方向沿着圆柱母线（X轴），可以再应用一次旋转
+        // 但为了保持简单，这里省略，直接使用默认行为（类似 sphere 的默认行为）
+
+        resObjects.push(object)
+    }
+    return resObjects
+}
+
 export function confettiFire(index: number, maxLimit: number) {
     if (index > maxLimit) {
         return
