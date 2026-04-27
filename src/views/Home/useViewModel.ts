@@ -1,24 +1,20 @@
 import type { Material, Object3D } from 'three'
-import type { TargetType } from './type'
 import type { IPersonConfig } from '@/types/storeType'
 import * as TWEEN from '@tweenjs/tween.js'
+import { cloneDeep, shuffle } from 'lodash-es'
 import { storeToRefs } from 'pinia'
-import { PerspectiveCamera, Scene } from 'three'
-import { CSS3DObject, CSS3DRenderer } from 'three-css3d'
-import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
+import { AmbientLight, CanvasTexture, DoubleSide, Group, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, Scene, TextureLoader, WebGLRenderer } from 'three'
 import { nextTick, onMounted, onUnmounted, ref, unref } from 'vue'
 import { useToast } from 'vue-toast-notification'
 import dongSound from '@/assets/audio/end.mp3'
 import enterAudio from '@/assets/audio/enter.wav'
 import worldCupAudio from '@/assets/audio/worldcup.mp3'
 import { CONFETTI_FIRE_MAX_COUNT, SINGLE_TIME_MAX_PERSON_COUNT } from '@/constant/config'
-import { useElementPosition, useElementStyle } from '@/hooks/useElement'
 import i18n from '@/locales/i18n'
 import useStore from '@/store'
-import { selectCard } from '@/utils'
-import { rgba } from '@/utils/color'
+import { delayAsync } from '@/utils'
 import { LotteryStatus } from './type'
-import { confettiFire, createCylinderVertices, createTableVertices, getRandomElements, initTableData } from './utils'
+import { confettiFire, getRandomElements } from './utils'
 
 const maxAudioLimit = 10
 export function useViewModel() {
@@ -32,42 +28,23 @@ export function useViewModel() {
     } = storeToRefs(personConfig)
     const { getCurrentPrize: currentPrize } = storeToRefs(prizeConfig)
     const {
-        getCardColor: cardColor,
-        getPatterColor: patternColor,
-        getPatternList: patternList,
-        getTextColor: textColor,
-        getLuckyColor: luckyColor,
-        getCardSize: cardSize,
-        getTextSize: textSize,
-        getRowCount: rowCount,
-        getIsShowAvatar: isShowAvatar,
         getTitleFont: titleFont,
         getTitleFontSyncGlobal: titleFontSyncGlobal,
         getDefiniteTime: definiteTime,
         getWinMusic: isPlayWinMusic,
     } = storeToRefs(globalConfig)
     // three初始值
-    const ballRotationX = ref(0)
-    const ballRotationY = ref(0)
     const containerRef = ref<HTMLElement>()
+    // 是否可以操作
     const canOperate = ref(true)
-    const cameraZ = ref(3000)
-    const scene = ref()
-    const camera = ref()
-    const renderer = ref()
-    const controls = ref()
-    const objects = ref<any[]>([])
-    const targets: TargetType = {
-        grid: [],
-        helix: [],
-        table: [],
-        sphere: [],
-    }
+    let scene: any = null
+    let camera: any = null
+    let renderer: any = null
+    let objects: any = []
     // 页面数据初始值
     const currentStatus = ref<LotteryStatus>(LotteryStatus.init) // 0为初始状态， 1为抽奖准备状态，2为抽奖中状态，3为抽奖结束状态
     const tableData = ref<any[]>([])
     const luckyTargets = ref<any[]>([])
-    const luckyCardList = ref<number[]>([])
     const luckyCount = ref(10)
     const personPool = ref<IPersonConfig[]>([])
     const intervalTimer = ref<any>(null)
@@ -78,275 +55,269 @@ export function useViewModel() {
     // 抽奖音乐相关
     const lotteryMusic = ref<HTMLAudioElement | null>(null)
 
+    const CARD_W = 22.50 // 对应540px宽
+    const CARD_H = 7.5 // 对应180px高
+    const GAP = 0.5 // 卡片之间的垂直间距
+
+    // 相机视野范围 (世界坐标系 Y 轴范围)
+    // 相机在 z=14, fov=75°, 视野高度 ≈ 2 * 14 * tan(37.5°) ≈ 21.5
+    // 屏幕可视范围: 顶部约 +10.5 ~ 底部 -10.5，为了留出边缘感，定义掉落边界：
+    const TOP_VISIBLE = 9.8 // 屏幕顶部边界 (稍内收)
+
+    // 循环复用边界: 卡片位置低于 BOTTOM_LIMIT 时立即移到队列顶部
+    const BOTTOM_LIMIT = -17.0 // 略低于可视底部，保证平滑
+    // 初始队列整体位于屏幕外顶部: 让最低的卡片刚好在 TOP_VISIBLE 上方 + 偏移
+    // 这样初始时没有任何卡片出现在屏幕内，随着下移自然落入视野。
+    let DROP_SPEED = 12 // 单位: 世界单位/秒 (匀速掉落)
+    const cardList = ref<any[]>([])
+    const cardBgTexture = ref<any>()
+
+    const visible = ref(false)
+    const title = ref('')
+
     function initThreeJs() {
-        const felidView = 40
-        const width = window.innerWidth
-        const height = window.innerHeight
-        const aspect = width / height
-        const nearPlane = 1
-        const farPlane = 10000
-        const WebGLoutput = containerRef.value
+        scene = new Scene()
+        scene.background = null // 或者不设置
+        // 纹理加载
+        const textureLoader = new TextureLoader()
+        cardBgTexture.value = textureLoader.load('https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/border.png')
 
-        scene.value = new Scene()
-        camera.value = new PerspectiveCamera(felidView, aspect, nearPlane, farPlane)
-        camera.value.position.z = cameraZ.value
-        renderer.value = new CSS3DRenderer()
-        renderer.value.setSize(width, height * 0.9)
-        renderer.value.domElement.style.position = 'absolute'
-        // 垂直居中
-        renderer.value.domElement.style.paddingTop = '50px'
-        renderer.value.domElement.style.top = '50%'
-        renderer.value.domElement.style.left = '50%'
-        renderer.value.domElement.style.transform = 'translate(-50%, -50%)'
-        WebGLoutput!.appendChild(renderer.value.domElement)
+        // 透视相机: 视野75，宽高比动态，近平面0.1，远平面2000
+        camera = new PerspectiveCamera(75, 1200 / 550, 0.1, 2000)
+        camera.position.z = 14
+        camera.position.y = 0
 
-        controls.value = new TrackballControls(camera.value, renderer.value.domElement)
-        controls.value.rotateSpeed = 1
-        controls.value.staticMoving = true
-        controls.value.minDistance = 500
-        controls.value.maxDistance = 6000
-        controls.value.addEventListener('change', render)
+        renderer = new WebGLRenderer({ antialias: true, alpha: true })
+        renderer.setClearColor(0x000000, 0)
+        renderer.setSize(1200, 550)
+        renderer.setPixelRatio(window.devicePixelRatio)
+        containerRef.value!.appendChild(renderer.domElement)
 
-        const tableLen = tableData.value.length
-        for (let i = 0; i < tableLen; i++) {
-            let element = document.createElement('div')
-            element.className = 'element-card'
+        // 环境光让纹理正常显示
+        const ambientLight = new AmbientLight(0xFFFFFF, 1)
+        scene.add(ambientLight)
+        initCardQueue()
+        animateMovement()
+        currentStatus.value = LotteryStatus.ready
+    }
 
-            const number = document.createElement('div')
-            number.className = 'card-id'
-            number.textContent = tableData.value[i].uid
-            if (isShowAvatar.value)
-                number.style.display = 'none'
-            element.appendChild(number)
+    // ---------- 创建带数字的卡片 (白底黑字 + 背景图边框) ----------
+    function createCardWithText(text: string) {
+        const geometry = new PlaneGeometry(CARD_W, CARD_H)
+        const aspectRatio = CARD_W / CARD_H
+        const canvasWidth = 800 // 基准宽度
+        const canvasHeight = canvasWidth / aspectRatio // 自动计算高度
 
-            const symbol = document.createElement('div')
-            symbol.className = 'card-name'
-            symbol.textContent = tableData.value[i].name
-            if (isShowAvatar.value)
-                symbol.className = 'card-name card-avatar-name'
-            element.appendChild(symbol)
+        // 创建组合材质：白色背景 + 背景图边框
+        const canvas = document.createElement('canvas')
+        canvas.width = canvasWidth
+        canvas.height = canvasHeight
+        const ctx = canvas.getContext('2d')
 
-            const detail = document.createElement('div')
-            detail.className = 'card-detail'
-            detail.innerHTML = `${tableData.value[i].department}<br/>${tableData.value[i].identity}`
-            if (isShowAvatar.value)
-                detail.style.display = 'none'
-            element.appendChild(detail)
+        // 1. 填充白色背景
+        ctx!.fillStyle = '#FFFFFF'
+        ctx!.fillRect(0, 0, canvas.width, canvas.height)
 
-            if (isShowAvatar.value) {
-                const avatar = document.createElement('img')
-                avatar.className = 'card-avatar'
-                avatar.src = tableData.value[i].avatar
-                avatar.alt = 'avatar'
-                avatar.style.width = '140px'
-                avatar.style.height = '140px'
-                element.appendChild(avatar)
+        // 绘制黑色数字
+        ctx!.fillStyle = '#000000'
+        ctx!.font = `bold 32px 'Segoe UI', 'PingFang SC', system-ui`
+        ctx!.textAlign = 'center'
+        ctx!.textBaseline = 'middle'
+        ctx!.fillText(text, canvas.width / 2, canvas.height / 2)
+
+        // 可选：添加细微的阴影让数字更立体（但不影响可读性）
+        ctx!.shadowBlur = 0
+
+        const numTexture = new CanvasTexture(canvas)
+        numTexture.needsUpdate = true
+
+        // 创建组: 背景图（边框纹理） + 白色底+黑色数字
+        const group = new Group()
+
+        // 背景图材质 (border.png 带透明边框和装饰)
+        const bgMaterial = new MeshBasicMaterial({
+            map: cardBgTexture.value,
+            transparent: true,
+            side: DoubleSide,
+        })
+        const bgPlane = new Mesh(geometry, bgMaterial)
+        group.add(bgPlane)
+
+        // 数字材质 (白色底 + 黑色数字)
+        const numMaterial = new MeshBasicMaterial({
+            map: numTexture,
+            transparent: false, // 不透明，因为白色背景已覆盖
+            side: DoubleSide,
+            depthWrite: false,
+        })
+        const numPlane = new Mesh(geometry, numMaterial)
+        numPlane.position.z = 0.02 // 稍微抬高，显示在背景图上方
+        group.add(numPlane)
+
+        return group
+    }
+    const isPaused = ref(false)
+    // 是否已展示中中奖人员
+    const isShowLuckyTargets = ref(false)
+    // 动画 & 帧循环移动
+    let lastTimestamp = performance.now()
+    // ---------- 初始化卡片队列 (全部位于屏幕外顶部，呈连续长链) ----------
+    function initCardQueue() {
+        // 计算队列总长度 (从最高卡片到最低卡片的总垂直跨度)
+        const unitHeight = CARD_H + GAP // 7.75
+        const totalSpan = unitHeight * (tableData.value.length - 1) // 199 * 7.75 ≈ 1542.25
+
+        // 需求: 整个队列初始时“整体在屏幕外的顶部”，即最低的卡片也高于屏幕可视区顶部
+        // 设定最低卡片 (索引最大) 的 Y 坐标 = TOP_VISIBLE + 1.5 (完全位于屏幕上方不可见)
+        const lowestCardY = TOP_VISIBLE + 2.2 // ≈ 12.0  > 9.8 屏幕外顶部
+
+        // 最高卡片 (索引0) 的 Y 坐标 = lowestCardY + totalSpan
+        const highestCardY = lowestCardY + totalSpan // ≈ 12 + 1542 = 1554
+        // 清空现有数组
+        cardList.value = []
+        objects = []
+
+        const arrayResult = shuffle(tableData.value)
+
+        // 按照从高到低的顺序创建物体 (Y递减)
+        for (let i = 0; i < arrayResult.length; i++) {
+            const item = arrayResult[i]
+            const card = createCardWithText(`${item.uid} ${item.name}`)
+            // 计算当前卡片的Y: highestCardY - i * unitHeight
+            const posY = highestCardY - i * unitHeight
+            card.position.y = posY
+            card.position.x = 0
+            card.position.z = 0
+            card.name = `${item.uid} ${item.name}`
+            scene.add(card)
+            cardList.value.push(card)
+
+            // 同时填充 objects 数组，保持与 cardList 相同的索引
+            objects.push({
+                element: card,
+                position: card.position,
+                rotation: card.rotation,
+                person: item,
+                index: i,
+            })
+        }
+    }
+    // 每帧统一向下移动所有卡片，检测最低卡片是否低于底部界线，
+    // 若是则将其移动到队列最顶部，并保持连续无缝。
+    function updateRecycle() {
+        if (isPaused.value) {
+            if (isShowLuckyTargets.value) {
+                return
             }
             else {
-                const avatarEmpty = document.createElement('div')
-                avatarEmpty.style.display = 'none'
-                element.appendChild(avatarEmpty)
-            }
+                isShowLuckyTargets.value = true
 
-            element = useElementStyle({
-                element,
-                person: tableData.value[i],
-                index: i,
-                patternList: patternList.value,
-                patternColor: patternColor.value,
-                cardColor: cardColor.value,
-                cardSize: cardSize.value,
-                scale: 1,
-                textSize: textSize.value,
-                mod: 'default',
-            },
-            )
-            const object = new CSS3DObject(element)
-            object.position.x = Math.random() * 4000 - 2000
-            object.position.y = Math.random() * 4000 - 2000
-            object.position.z = Math.random() * 4000 - 2000
-            scene.value.add(object)
-
-            objects.value.push(object)
-        }
-        // 创建横铺的界面
-        targets.table = createTableVertices({
-            tableData: tableData.value,
-            rowCount: rowCount.value,
-            cardSize: cardSize.value,
-        })
-        // 创建球体
-        // targets.sphere = createSphereVertices({ objectsLength: objects.value.length })
-        // 创建圆柱体
-        targets.sphere = createCylinderVertices()
-        window.addEventListener('resize', onWindowResize, false)
-        transform(targets.table, 1000)
-        render()
-    }
-    function render() {
-        if (renderer.value) {
-            renderer.value.render(scene.value, camera.value)
-        }
-    }
-    /**
-     * @description: 位置变换
-     * @param targets 目标位置
-     * @param duration 持续时间
-     */
-    function transform(targets: any[], duration: number) {
-        TWEEN.removeAll()
-        if (intervalTimer.value) {
-            clearInterval(intervalTimer.value)
-            intervalTimer.value = null
-            randomBallData('sphere')
-        }
-
-        return new Promise((resolve) => {
-            const objLength = objects.value.length
-            for (let i = 0; i < objLength; ++i) {
-                const object = objects.value[i]
-                const target = targets[i]
-                new TWEEN.Tween(object.position)
-                    .to({ x: target.position.x, y: target.position.y, z: target.position.z }, Math.random() * duration + duration)
-                    .easing(TWEEN.Easing.Exponential.InOut)
-                    .start()
-
-                new TWEEN.Tween(object.rotation)
-                    .to({ x: target.rotation.x, y: target.rotation.y, z: target.rotation.z }, Math.random() * duration + duration)
-                    .easing(TWEEN.Easing.Exponential.InOut)
-                    .start()
-                    .onComplete(() => {
-                        if (luckyCardList.value.length) {
-                            luckyCardList.value.forEach((cardIndex: any) => {
-                                const item = objects.value[cardIndex]
-                                useElementStyle({
-                                    element: item.element,
-                                    person: {} as any,
-                                    index: i,
-                                    patternList: patternList.value,
-                                    patternColor: patternColor.value,
-                                    cardColor: cardColor.value,
-                                    cardSize: cardSize.value,
-                                    scale: 1,
-                                    textSize: textSize.value,
-                                    mod: 'sphere',
-                                })
-                            })
-                        }
-                        luckyTargets.value = []
-                        luckyCardList.value = []
-                        canOperate.value = true
-                    })
-            }
-
-            // 这个补间用来在位置与旋转补间同步执行，通过onUpdate在每次更新数据后渲染scene和camera
-            new TWEEN.Tween({})
-                .to({}, duration * 2)
-                .onUpdate(render)
-                .start()
-                .onComplete(() => {
-                    canOperate.value = true
-                    resolve('')
+                // 获取所有中奖人员的 uid（或其他唯一标识）
+                const luckyKeyList = luckyTargets.value.map(target => `${target.uid} ${target.name}`)
+                // 找出所有中奖卡片在 cardList 中的索引
+                const luckyCardIndices: number[] = []
+                cardList.value.forEach((card, index) => {
+                    if (luckyKeyList.includes(card.name)) {
+                        luckyCardIndices.push(index)
+                    }
                 })
-        })
+
+                // 将中奖卡片按索引从大到小排序（从后往前处理，避免索引错乱）
+                luckyCardIndices.sort((a, b) => b - a)
+
+                // 获取需要交换的目标位置（队列末尾）
+                const totalCards = cardList.value.length
+                // 从倒数第二个位置开始（倒数第一是最底部即将移除的卡片）
+                const targetPositionIndex = totalCards - 2
+
+                // 依次将中奖卡片交换到目标位置
+                for (let i = 0; i < luckyCardIndices.length; i++) {
+                    const luckyIndex = luckyCardIndices[i]
+                    const targetIndex = targetPositionIndex - i
+
+                    // 确保目标位置有效且不与原位置相同
+                    if (targetIndex >= 0 && targetIndex !== luckyIndex) {
+                        // 保存要交换的卡片和它的Y坐标
+                        const tempCard = cardList.value[luckyIndex]
+                        const tempY = tempCard.position.y
+
+                        // 交换对象引用
+                        cardList.value[luckyIndex] = cardList.value[targetIndex]
+                        cardList.value[targetIndex] = tempCard
+
+                        // 交换Y坐标（现在操作的是交换后的正确对象）
+                        const swapY = cardList.value[luckyIndex].position.y
+                        cardList.value[luckyIndex].position.y = tempY
+                        cardList.value[targetIndex].position.y = swapY
+
+                        // 同时交换 objects 数组中的位置
+                        if (objects && objects[luckyIndex] && objects[targetIndex]) {
+                            const tempObject = objects[luckyIndex]
+                            objects[luckyIndex] = objects[targetIndex]
+                            objects[targetIndex] = tempObject
+                        }
+                    }
+                }
+                render()
+                return
+            }
+        }
+
+        // 采用 while 处理一帧内可能多个卡片超出底部的情况
+        while (cardList.value.length > 0) {
+            const lowestCard = cardList.value[cardList.value.length - 1]
+            // 如果最低卡片的位置低于底部界限，则需要复用到顶部
+            if (lowestCard.position.y < BOTTOM_LIMIT) {
+                // 1. 从数组中移除最低卡片 (末尾)
+                const recycledCard = cardList.value.pop()
+
+                // 2. 获取当前队列最顶部卡片 (索引0)
+                const topCard = cardList.value[0]
+                // 新位置应该在最顶部卡片的正上方 (y + 卡片高度 + 间距)
+                const newTopY = topCard.position.y + (CARD_H + GAP)
+                recycledCard.position.y = newTopY
+
+                // 3. 重新插入到数组头部，维持从高到低的顺序
+                cardList.value.unshift(recycledCard)
+            }
+            else {
+                break
+            }
+        }
+    }
+    function animateMovement() {
+        const now = performance.now()
+        const delta = Math.min(0.033, (now - lastTimestamp) / 1000) // 限制最大delta 33ms
+        lastTimestamp = now
+
+        if (!isPaused.value && delta > 0) {
+            const moveDistance = DROP_SPEED * delta // 下移距离 (正值向下)
+            // 所有卡片统一向下移动
+            for (let i = 0; i < cardList.value.length; i++) {
+                cardList.value[i].position.y -= moveDistance
+            }
+            // 复用处理 (将超出底部的卡片移到顶部)
+            updateRecycle()
+        }
+
+        render()
+        requestAnimationFrame(animateMovement)
+    }
+
+    function render() {
+        if (renderer) {
+            renderer.render(scene, camera)
+        }
     }
     /**
      * @description: 窗口大小改变时重新设置渲染器的大小
      */
     function onWindowResize() {
-        camera.value.aspect = window.innerWidth / window.innerHeight
-        camera.value.updateProjectionMatrix()
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
 
-        renderer.value.setSize(window.innerWidth, window.innerHeight)
+        renderer.setSize(window.innerWidth, window.innerHeight)
         render()
-    }
-
-    /**
-     * [animation update all tween && controls]
-     */
-    function animation() {
-        TWEEN.update()
-        if (controls.value) {
-            controls.value.update()
-        }
-        // 设置自动旋转
-        // 设置相机位置
-        animationFrameId.value = requestAnimationFrame(animation)
-    }
-    /**
-     * @description: 旋转的动画
-     * @param rotateX 绕x轴旋转圈数
-     * @param rotateY 绕y轴旋转圈数
-     * @param duration 持续时间，单位秒
-     */
-    function rollBall(rotateX: number, rotateY: number, duration: number) {
-        TWEEN.removeAll()
-
-        return new Promise((resolve) => {
-            scene.value.rotation.y = 0
-            ballRotationY.value = Math.PI * rotateY * 1000
-            ballRotationX.value = Math.PI * rotateX * 1000
-            const rotateObj = new TWEEN.Tween(scene.value.rotation)
-            rotateObj
-                .to(
-                    {
-                        x: ballRotationX.value,
-                        // x: 0,
-                        y: ballRotationY.value,
-                        // z: Math.PI * rotateZ * 1000
-                        z: 0,
-                    },
-                    duration * 1000,
-                )
-                .onUpdate(render)
-                .start()
-                .onStop(() => {
-                    resolve('')
-                })
-                .onComplete(() => {
-                    resolve('')
-                })
-        })
-    }
-    /**
-     * @description: 视野转回正面
-     */
-    function resetCamera() {
-        new TWEEN.Tween(camera.value.position)
-            .to(
-                {
-                    x: 0,
-                    y: 0,
-                    z: 3000,
-                },
-                1000,
-            )
-            .onUpdate(render)
-            .start()
-            .onComplete(() => {
-                new TWEEN.Tween(camera.value.rotation)
-                    .to(
-                        {
-                            x: 0,
-                            y: 0,
-                            z: 0,
-                        },
-                        1000,
-                    )
-                    .onUpdate(render)
-                    .start()
-                    .onComplete(() => {
-                        canOperate.value = true
-                        // camera.value.lookAt(scene.value.position)
-                        camera.value.position.y = 0
-                        camera.value.position.x = 0
-                        camera.value.position.z = 3000
-                        camera.value.rotation.x = 0
-                        camera.value.rotation.y = 0
-                        camera.value.rotation.z = -0
-                        controls.value.reset()
-                    })
-            })
     }
 
     /**
@@ -448,18 +419,14 @@ export function useViewModel() {
     }
 
     /**
-     * @description: 开始抽奖，由横铺变换为球体（或其他图形）
-     * @returns 随机抽取球数据
+     * @description: 抽奖准备
      */
-    /// <IP_ADDRESS>description 进入抽奖准备状态
-    async function enterLottery() {
+    function enterLottery() {
         if (!canOperate.value) {
             return
         }
-
         // 重置音频状态
         resetAudioState()
-
         // 预加载音频资源以解决浏览器自动播放策略
         try {
             const audioContext = window.AudioContext || (window as any).webkitAudioContext
@@ -470,22 +437,12 @@ export function useViewModel() {
         catch (e) {
             console.warn('音频上下文不可用:', e)
         }
-
-        if (!intervalTimer.value) {
-            randomBallData()
-        }
-        if (patternList.value.length) {
-            for (let i = 0; i < patternList.value.length; i++) {
-                if (i < rowCount.value * 7) {
-                    objects.value[patternList.value[i] - 1].element.style.backgroundColor = rgba(cardColor.value, Math.random() * 0.5 + 0.25)
-                }
-            }
-        }
-        canOperate.value = false
-        await transform(targets.sphere, 1000)
+        canOperate.value = true
+        isPaused.value = false
+        isShowLuckyTargets.value = false
         currentStatus.value = LotteryStatus.ready
-        rollBall(0.1, 0, 2000)
     }
+
     /**
      * @description 开始抽奖
      */
@@ -504,6 +461,7 @@ export function useViewModel() {
 
             return
         }
+        DROP_SPEED = 180
         // personPool.value = currentPrize.value.isAll ? notThisPrizePersonList.value : notPersonList.value
         personPool.value = currentPrize.value.isAll ? [...notThisPrizePersonList.value] : [...notPersonList.value]
         // 已中该奖人员
@@ -560,7 +518,6 @@ export function useViewModel() {
         startLotteryMusic()
 
         currentStatus.value = LotteryStatus.running
-        rollBall(2, 0, 3000)
         if (definiteTime.value) {
             setTimeout(() => {
                 if (currentStatus.value === LotteryStatus.running) {
@@ -569,6 +526,9 @@ export function useViewModel() {
             }, definiteTime.value * 1000)
         }
     }
+
+    const showCount = ref(false)
+    const countText = ref('')
     /**
      * @description: 停止抽奖，抽出幸运人
      */
@@ -576,72 +536,43 @@ export function useViewModel() {
         if (!canOperate.value) {
             return
         }
+        countText.value = '叁'
+        showCount.value = true
+
+        await delayAsync(1)
+        countText.value = '贰'
+
+        await delayAsync(1)
+        countText.value = '壹'
+
+        await delayAsync(1)
+        showCount.value = false
+        await doStopLottery()
+    }
+
+    async function doStopLottery() {
         // 停止抽奖音乐
         stopLotteryMusic()
 
         // 播放结束音效
         playEndSound()
 
-        //   clearInterval(intervalTimer.value)
-        //   intervalTimer.value = null
-        canOperate.value = false
-        rollBall(0, 0, 0)
+        isShowLuckyTargets.value = false
+        isPaused.value = true
 
-        const windowSize = { width: window.innerWidth, height: window.innerHeight }
-        luckyTargets.value.forEach((person: IPersonConfig, index: number) => {
-            const cardIndex = selectCard(luckyCardList.value, tableData.value.length, person.id)
-            luckyCardList.value.push(cardIndex)
-            const totalLuckyCount = luckyTargets.value.length
-            const item = objects.value[cardIndex]
-            const { xTable, yTable, scale } = useElementPosition(
-                item,
-                rowCount.value,
-                totalLuckyCount,
-                { width: cardSize.value.width, height: cardSize.value.height },
-                windowSize,
-                index,
-            )
-            new TWEEN.Tween(item.position)
-                .to({
-                    x: xTable,
-                    y: yTable,
-                    z: 1000,
-                }, 1200)
-                .easing(TWEEN.Easing.Exponential.InOut)
-                .onStart(() => {
-                    item.element = useElementStyle({
-                        element: item.element,
-                        person,
-                        index: cardIndex,
-                        patternList: patternList.value,
-                        patternColor: patternColor.value,
-                        cardColor: luckyColor.value,
-                        cardSize: { width: cardSize.value.width, height: cardSize.value.height },
-                        scale,
-                        textSize: textSize.value,
-                        mod: 'lucky',
-                    })
-                })
-                .start()
-                .onComplete(() => {
-                    canOperate.value = true
-                    currentStatus.value = LotteryStatus.end
-                })
-            new TWEEN.Tween(item.rotation)
-                .to({
-                    x: 0,
-                    y: 0,
-                    z: 0,
-                }, 900)
-                .easing(TWEEN.Easing.Exponential.InOut)
-                .start()
-                .onComplete(() => {
-                    playWinMusic()
-                    confettiFire(index, CONFETTI_FIRE_MAX_COUNT)
-                    resetCamera()
-                })
-        })
+        DROP_SPEED = 12
+        playWinMusic()
+        confettiFire(3, CONFETTI_FIRE_MAX_COUNT)
+
+        updateRecycle()
+
+        await delayAsync(0.5)
+        title.value = currentPrize.value.name
+
+        canOperate.value = true
+        visible.value = true
     }
+
     // 播放音频，中将卡片越多audio对象越多，声音越大
     function playWinMusic() {
         if (!isPlayWinMusic.value) {
@@ -724,77 +655,6 @@ export function useViewModel() {
     }
 
     /**
-     * @description: 随机替换卡片中的数据（不改变原有的值，只是显示）
-     * @param {string} mod 模式
-     */
-    function randomBallData(mod: 'default' | 'lucky' | 'sphere' = 'default') {
-        // 两秒执行一次
-        intervalTimer.value = setInterval(() => {
-            // 产生随机数数组
-            const indexLength = 4
-            const cardRandomIndexArr: number[] = []
-            const personRandomIndexArr: number[] = []
-            for (let i = 0; i < indexLength; i++) {
-                // 解决随机元素概率过于不均等问题
-                const randomCardIndex = Math.floor(Math.random() * (tableData.value.length - 1))
-                const randomPersonIndex = Math.floor(Math.random() * (allPersonList.value.length - 1))
-                if (luckyCardList.value.includes(randomCardIndex)) {
-                    continue
-                }
-                cardRandomIndexArr.push(randomCardIndex)
-                personRandomIndexArr.push(randomPersonIndex)
-            }
-            for (let i = 0; i < cardRandomIndexArr.length; i++) {
-                if (!objects.value[cardRandomIndexArr[i]]) {
-                    continue
-                }
-                objects.value[cardRandomIndexArr[i]].element = useElementStyle({
-                    element: objects.value[cardRandomIndexArr[i]].element,
-                    person: allPersonList.value[personRandomIndexArr[i]],
-                    index: cardRandomIndexArr[i],
-                    patternList: patternList.value,
-                    patternColor: patternColor.value,
-                    cardColor: cardColor.value,
-                    cardSize: { width: cardSize.value.width, height: cardSize.value.height },
-                    textSize: textSize.value,
-                    scale: 1,
-                    mod,
-                    type: 'change',
-                })
-            }
-        }, 200)
-    }
-    /**
-     * @description: 键盘监听，快捷键操作
-     */
-    function listenKeyboard(e: any) {
-        if ((e.keyCode !== 32 || e.keyCode !== 27) && !canOperate.value) {
-            return
-        }
-        if (e.keyCode === 27 && currentStatus.value === LotteryStatus.running) {
-            quitLottery()
-        }
-        if (e.keyCode !== 32) {
-            return
-        }
-        switch (currentStatus.value) {
-            case LotteryStatus.init:
-                enterLottery()
-                break
-            case LotteryStatus.ready:
-                startLottery()
-                break
-            case LotteryStatus.running:
-                stopLottery()
-                break
-            case LotteryStatus.end:
-                continueLottery()
-                break
-            default:
-                break
-        }
-    }
-    /**
      * @description: 清理资源，避免内存溢出
      */
     function cleanup() {
@@ -822,8 +682,8 @@ export function useViewModel() {
         })
         playingAudios.value = []
 
-        if (scene.value) {
-            scene.value.traverse((object: Object3D) => {
+        if (scene) {
+            scene.traverse((object: Object3D) => {
                 if ((object as any).material) {
                     if (Array.isArray((object as any).material)) {
                         (object as any).material.forEach((material: Material) => {
@@ -841,28 +701,23 @@ export function useViewModel() {
                     (object as any).texture.dispose()
                 }
             })
-            scene.value.clear()
+            scene.clear()
         }
 
-        if (objects.value) {
-            objects.value.forEach((object) => {
-                if (object.element) {
-                    object.element.remove()
+        if (objects) {
+            objects.forEach((item: any) => {
+                if (item.element) {
+                    item.element.remove()
                 }
             })
-            objects.value = []
+            objects = []
         }
 
-        if (controls.value) {
-            controls.value.removeEventListener('change')
-            controls.value.dispose()
-        }
         //   移除所有事件监听
         window.removeEventListener('resize', onWindowResize)
-        scene.value = null
-        camera.value = null
-        renderer.value = null
-        controls.value = null
+        scene = null
+        camera = null
+        renderer = null
     }
     /**
      * @description: 设置默认人员列表
@@ -872,6 +727,10 @@ export function useViewModel() {
         // 刷新页面
         window.location.reload()
     }
+
+    /**
+     * 初始化人员信息，初始化threejs
+     */
     const init = () => {
         const startTime = Date.now()
         const maxWaitTime = 2000 // 2秒
@@ -880,12 +739,12 @@ export function useViewModel() {
             // 如果人员列表有数据或者等待时间超过2秒，则执行初始化
             if (allPersonList.value.length > 0 || (Date.now() - startTime) >= maxWaitTime) {
                 console.log('初始化完成')
-                tableData.value = initTableData({ allPersonList: allPersonList.value, rowCount: rowCount.value })
+                tableData.value = cloneDeep(allPersonList.value)
                 initThreeJs()
-                animation()
-                containerRef.value!.style.color = `${textColor}`
-                randomBallData()
-                window.addEventListener('keydown', listenKeyboard)
+                enterLottery()
+                // animation()
+                // containerRef.value!.style.color = `${textColor}`
+                // randomBallData()
                 isInitialDone.value = true
             }
             else {
@@ -906,8 +765,12 @@ export function useViewModel() {
         })
         clearInterval(intervalTimer.value)
         intervalTimer.value = null
-        window.removeEventListener('keydown', listenKeyboard)
     })
+
+    const handleClose = () => {
+        visible.value = false
+        continueLottery()
+    }
 
     return {
         setDefaultPersonList,
@@ -916,11 +779,16 @@ export function useViewModel() {
         quitLottery,
         containerRef,
         stopLottery,
-        enterLottery,
         tableData,
         currentStatus,
         isInitialDone,
         titleFont,
         titleFontSyncGlobal,
+        showCount,
+        countText,
+        visible,
+        title,
+        luckyTargets,
+        handleClose,
     }
 }

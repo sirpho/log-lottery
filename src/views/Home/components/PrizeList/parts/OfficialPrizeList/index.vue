@@ -67,20 +67,25 @@ watch ([prizeShow, () => props.temporaryPrizeShow], (val) => {
       <div v-if="isScroll" class="w-full h-16 flex justify-center scroll-button scroll-button-up absolute top-0 z-50">
         <SvgIcon v-show="showUpButton" name="chevron-up" size="64px" class="text-gray-200/80 cursor-pointer" @click="handleScroll(-150)" />
       </div>
-      <div ref="scrollContainerRef" :class="isScroll ? (showDownButton ? 'scroll-container' : 'scroll-container-end') : 'no-scroll bg-slate-500/50'" class="h-full no-before overflow-y-auto overflow-x-hidden  scroll-smooth hide-scrollbar before:bg-slate-500/50 z-20 rounded-xl">
+      <div ref="scrollContainerRef" :class="isScroll ? (showDownButton ? 'scroll-container' : 'scroll-container-end') : 'no-scroll'"
+           style="background: rgba(98,116,142,0.2);"
+           class="h-full no-before overflow-y-auto overflow-x-hidden  scroll-smooth hide-scrollbar z-20 rounded-xl">
         <ul ref="ulContainerRef" class="flex flex-col gap-1 p-2">
           <li
             v-for="item in localPrizeList"
             ref="liRefs" :key="item.id"
             :class="currentPrize.id === item.id ? 'current-prize' : ''"
+            style="color: #333333"
           >
             <div
               v-if="item.isShow"
-              class="relative flex flex-row items-center justify-between w-64 h-20 px-3 gap-6 shadow-xl card bg-base-100"
+              class="content relative flex flex-row items-center justify-between w-64 h-20 px-3 gap-6 shadow-xl card bg-base-10"
+              :class="item.isUsed ? '' : 'bg-[#ffffff]'"
             >
               <div
                 v-if="item.isUsed"
-                class="absolute z-50 w-full left-0 h-full bg-gray-800/70 item-mask rounded-xl"
+                class="absolute z-50 w-full left-0 h-full item-mask rounded-xl"
+                style="background: rgba(255, 255, 255, 0.4)"
               />
               <figure class="w-10 h-10 rounded-xl">
                 <ImageSync v-if="item.picture.url" :img-item="item.picture" />
@@ -102,8 +107,9 @@ watch ([prizeShow, () => props.temporaryPrizeShow], (val) => {
                     item.count }}
                 </p>
                 <progress
-                  class="w-full h-6 progress bg-[#52545b] progress-primary" :value="item.isUsedCount"
+                  class="w-full h-6 progress bg-[#F3F3F3] progress-primary" :value="item.isUsedCount"
                   :max="item.count"
+                  style="color: #FFE2E2"
                 />
               </div>
             </div>

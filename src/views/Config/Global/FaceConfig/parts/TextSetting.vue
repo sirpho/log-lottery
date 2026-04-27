@@ -17,24 +17,24 @@ const titleFontSyncGlobalValue = defineModel<boolean>('titleFontSyncGlobalValue'
     <legend class="fieldset-legend">
       {{ t('table.textSetting') }}
     </legend>
-    <label class="label">
-      <div class="label">
-        <span class="label-text">{{ t('table.title') }}</span>
-      </div>
-    </label>
-    <input
-      v-model="topTitleValue" type="text" :placeholder="t('placeHolder.enterTitle')"
-      class="w-full max-w-xs input input-bordered"
-    >
-    <label class="w-full max-w-xs form-control">
-      <div class="label">
-        <span class="label-text">{{ t('table.language') }}</span>
-      </div>
-      <select v-model="languageValue" data-choose-theme class="w-full max-w-xs border-solid select border">
-        <option disabled selected>{{ t('table.language') }}</option>
-        <option v-for="item in languageList" :key="item.key" :value="item.key">{{ item.name }}</option>
-      </select>
-    </label>
+<!--    <label class="label">-->
+<!--      <div class="label">-->
+<!--        <span class="label-text">{{ t('table.title') }}</span>-->
+<!--      </div>-->
+<!--    </label>-->
+<!--    <input-->
+<!--      v-model="topTitleValue" type="text" :placeholder="t('placeHolder.enterTitle')"-->
+<!--      class="w-full max-w-xs input input-bordered"-->
+<!--    >-->
+<!--    <label class="w-full max-w-xs form-control">-->
+<!--      <div class="label">-->
+<!--        <span class="label-text">{{ t('table.language') }}</span>-->
+<!--      </div>-->
+<!--      <select v-model="languageValue" data-choose-theme class="w-full max-w-xs border-solid select border">-->
+<!--        <option disabled selected>{{ t('table.language') }}</option>-->
+<!--        <option v-for="item in languageList" :key="item.key" :value="item.key">{{ item.name }}</option>-->
+<!--      </select>-->
+<!--    </label>-->
     <label class="w-full max-w-xs form-control">
       <div class="label">
         <span class="label-text">{{ t('table.textSize') }}</span>

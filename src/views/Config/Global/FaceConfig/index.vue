@@ -58,35 +58,7 @@ const {
         v-model:title-font-sync-global-value="titleFontSyncGlobalValue"
         v-model:language-list="languageList"
       />
-      <!-- 布局设置（列数、卡片宽度、卡片高度 -->
-      <LayoutSetting
-        v-model:form-err="formErr"
-        v-model:form-data="formData"
-        v-model:card-size-value="cardSizeValue"
-        v-model:is-show-prize-list-value="isShowPrizeListValue"
-        v-model:is-show-avatar-value="isShowAvatarValue"
-        :reset-person-layout="resetPersonLayout"
-        :is-row-count-change="isRowCountChange"
-      />
-      <!-- 主题设置（主题、背景图片） -->
-      <ThemeSetting
-        v-model:theme-value="themeValue"
-        v-model:background-image-value="backgroundImageValue"
-        v-model:card-color-value="cardColorValue"
-        v-model:lucky-card-color-value="luckyCardColorValue"
-        v-model:text-color-value="textColorValue"
-        v-model:pattern-color-value="patternColorValue"
-        :image-list="imageList"
-      />
-      <!-- 图案设置 -->
-      <PatternSetting
-        :row-count="rowCount"
-        :card-color="cardColor"
-        :pattern-color="patternColor"
-        :pattern-list="patternList"
-        :clear-pattern="clearPattern"
-        :reset-pattern="resetPattern"
-      />
+     
       <!-- 功能设置 -->
       <AbilitySetting v-model:definite-time="definiteTimeValue" v-model:win-music="isWinMusicValue" />
     </GridWaterfall>

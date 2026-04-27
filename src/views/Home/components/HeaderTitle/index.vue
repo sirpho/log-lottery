@@ -1,9 +1,11 @@
 <script setup lang='ts'>
-import type { CSSProperties } from 'vue'
-import { computed, toRefs } from 'vue'
+import { toRefs } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { rgbToHex } from '@/utils/color'
+
+const props = defineProps<Props>()
+
+const baseUrl = import.meta.env.BASE_URL.replace('./', '/')
 
 interface Props {
     textSize: number
@@ -16,37 +18,37 @@ interface Props {
     titleFontSyncGlobal: boolean
 }
 
-const props = defineProps<Props>()
 const router = useRouter()
-const { tableData, textSize, textColor, topTitle, setDefaultPersonList, titleFont, titleFontSyncGlobal } = toRefs(props)
-const isTextColor = computed(() => {
-    return rgbToHex(textColor.value) !== '#00000000'
-})
-const titleStyle = computed(() => {
-    const style: CSSProperties = {
-        fontSize: `${textSize.value * 1.5}px`,
-    }
-    if (!titleFontSyncGlobal.value) {
-        style.fontFamily = titleFont.value
-    }
-    if (isTextColor.value) {
-        style.color = textColor.value
-    }
-
-    return style
-})
+const { tableData, setDefaultPersonList } = toRefs(props)
+// const isTextColor = computed(() => {
+//     return rgbToHex(textColor.value) !== '#00000000'
+// })
+// const titleStyle = computed(() => {
+//     const style: CSSProperties = {
+//         fontSize: `${textSize.value * 1.5}px`,
+//     }
+//     if (!titleFontSyncGlobal.value) {
+//         style.fontFamily = titleFont.value
+//     }
+//     if (isTextColor.value) {
+//         style.color = textColor.value
+//     }
+//
+//     return style
+// })
 const { t } = useI18n()
 </script>
 
 <template>
   <div class="absolute z-10 flex flex-col items-center justify-center -translate-x-1/2 left-1/2">
-    <h2
-      class="pt-12 m-0 mb-12 tracking-wide text-center leading-12"
-      :class="{ 'animate-pulse bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent': !isTextColor }"
-      :style="titleStyle"
-    >
-      {{ topTitle }}
-    </h2>
+    <img class="logo1" :src="`${baseUrl}logo1.png`" width="450" height="70" alt="">
+    <!--    <h2 -->
+    <!--      class="pt-12 m-0 mb-12 tracking-wide text-center leading-12" -->
+    <!--      :class="{ 'animate-pulse bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent': !isTextColor }" -->
+    <!--      :style="titleStyle" -->
+    <!--    > -->
+    <!--      {{ topTitle }} -->
+    <!--    </h2> -->
     <div v-if="isInitialDone" class="flex gap-3">
       <button
         v-if="tableData.length <= 0" class="cursor-pointer btn btn-outline btn-secondary btn-lg"
@@ -70,6 +72,11 @@ const { t } = useI18n()
 </template>
 
 <style scoped lang="scss">
+.logo1 {
+  margin-top: 90px;
+  width: 450px;
+  height: 70px;
+}
 .header-title {
     -webkit-animation: tracking-in-expand-fwd 0.8s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;
     animation: tracking-in-expand-fwd 0.8s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;

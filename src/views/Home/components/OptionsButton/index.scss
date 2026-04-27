@@ -25,9 +25,8 @@
         backdrop-filter: blur(1rem);
         border-radius: 5rem;
         transition: 0.5s;
-        animation: gradient_301 5s ease infinite;
-        border: double 4px transparent;
-        background-image: linear-gradient(#212121, #212121), linear-gradient(137.48deg, #ffdb3b 10%, #FE53BB 45%, #8F51EA 67%, #0044ff 87%);
+        border: double 1px transparent;
+        background-image: linear-gradient(137.48deg, #B7010D 10%, #ba000d 45%, #b9000e 67%, #cd030b 87%);
         background-origin: border-box;
         background-clip: content-box, border-box;
         -webkit-animation: pulsate-fwd 1.2s ease-in-out infinite both;
@@ -35,7 +34,7 @@
 
         &:hover #container-stars {
             z-index: 1;
-            background-color: #212121;
+            background-color: #ff0914;
         }
 
         &:hover {
@@ -43,14 +42,14 @@
         }
 
         &:active {
-            border: double 4px #FE53BB;
+            border: double 4px #B7010D;
             background-origin: border-box;
             background-clip: content-box, border-box;
             animation: none;
         }
 
         &:active .circle {
-            background: #FE53BB;
+            background: #ff0914;
         }
 
         strong {
@@ -137,10 +136,9 @@
     }
 
     .btn-neon {
-        --glow-color: rgb(217, 176, 255);
-        --glow-spread-color: rgba(191, 123, 255, 0.781);
-        --enhanced-glow-color: rgb(231, 206, 255);
-        --btn-color: rgb(100, 61, 136);
+        --glow-color: #B7010D;
+        --glow-spread-color: #FFD5D5;
+        --btn-color: #FFD5D5;
         -webkit-animation: pulsate-fwd 0.9s ease-in-out infinite both;
         animation: pulsate-fwd 0.9s ease-in-out infinite both;
         cursor: pointer;
@@ -152,9 +150,9 @@
         background-color: var(--btn-color);
         border-radius: 1em;
         outline: none;
-        box-shadow: 0 0 1em .25em var(--glow-color),
-            0 0 4em 1em var(--glow-spread-color),
-            inset 0 0 .75em .25em var(--glow-color);
+        //box-shadow: 0 0 1em .25em var(--glow-color),
+        //    0 0 4em 1em var(--glow-spread-color),
+        //    inset 0 0 .75em .25em var(--glow-color);
         text-shadow: 0 0 .5em var(--glow-color);
         position: relative;
         transition: all 0.3s;
@@ -173,20 +171,6 @@
             filter: blur(2em);
             opacity: .7;
             transform: perspective(1.5em) rotateX(35deg) scale(1, .6);
-        }
-
-        &:hover {
-            color: var(--btn-color);
-            background-color: var(--glow-color);
-            box-shadow: 0 0 1em .25em var(--glow-color),
-                0 0 4em 2em var(--glow-spread-color),
-                inset 0 0 .75em .25em var(--glow-color);
-        }
-
-        &:active {
-            box-shadow: 0 0 0.6em .25em var(--glow-color),
-                0 0 2.5em 2em var(--glow-spread-color),
-                inset 0 0 .5em .25em var(--glow-color);
         }
     }
 

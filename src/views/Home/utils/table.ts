@@ -136,7 +136,6 @@ export function confettiFire(index: number, maxLimit: number) {
             spread: 55,
             origin: { x: 1 },
         })
-        console.log('requestAnimationFrame')
         // keep going until we are out of time
         if (Date.now() < end) {
             requestAnimationFrame(frame)
