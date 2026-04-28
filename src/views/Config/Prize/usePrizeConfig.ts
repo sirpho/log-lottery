@@ -104,6 +104,7 @@ export function usePrizeConfig() {
             isUsed: false,
             isShow: true,
             frequency: 1,
+            designatedList: [],
         }
         prizeList.value.push(defaultPrizeCOnfig)
         toast.success(i18n.global.t('error.success'))
@@ -137,6 +138,6 @@ export function usePrizeConfig() {
         changePrizeStatus,
         selectPrize,
         localImageList,
-        getAllPersonList
+        getAllPersonList,
     }
 }

@@ -5,8 +5,6 @@ import { useRouter } from 'vue-router'
 
 const props = defineProps<Props>()
 
-const baseUrl = import.meta.env.BASE_URL.replace('./', '/')
-
 interface Props {
     textSize: number
     textColor: string
@@ -41,7 +39,7 @@ const { t } = useI18n()
 
 <template>
   <div class="absolute z-10 flex flex-col items-center justify-center -translate-x-1/2 left-1/2">
-    <img class="logo1" :src="`${baseUrl}logo1.png`" width="450" height="70" alt="">
+    <img class="logo1" src="https://fe-static.obs.cn-hz1.ctyun.cn/lottery/logo1.png" width="450" height="70" alt="">
     <!--    <h2 -->
     <!--      class="pt-12 m-0 mb-12 tracking-wide text-center leading-12" -->
     <!--      :class="{ 'animate-pulse bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent': !isTextColor }" -->

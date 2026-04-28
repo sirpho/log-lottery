@@ -8,8 +8,6 @@ import PrizeList from './components/PrizeList/index.vue'
 import { useViewModel } from './useViewModel'
 import 'vue-toast-notification/dist/theme-sugar.css'
 
-const baseUrl = import.meta.env.BASE_URL.replace('./', '/')
-
 const viewModel = useViewModel()
 const { setDefaultPersonList, visible, title, luckyTargets, handleClose, tableData, currentStatus, showCount, countText, stopLottery, containerRef, startLottery, continueLottery, quitLottery, isInitialDone, titleFont, titleFontSyncGlobal } = viewModel
 const globalConfig = useStore().globalConfig
@@ -35,10 +33,10 @@ const { getTopTitle: topTitle, getTextColor: textColor, getTextSize: textSize } 
         {{ countText }}
       </div>
     </div>
-    <img :src="`${baseUrl}wrap-border-1.png`" class="wrap-border wrap-border-1" alt="">
-    <img :src="`${baseUrl}wrap-border-2.png`" class="wrap-border wrap-border-2" alt="">
-    <img :src="`${baseUrl}wrap-border-3.png`" class="wrap-border wrap-border-3" alt="">
-    <img :src="`${baseUrl}wrap-border-4.png`" class="wrap-border wrap-border-4" alt="">
+    <img src="https://fe-static.obs.cn-hz1.ctyun.cn/lottery/wrap-border-1.png" class="wrap-border wrap-border-1" alt="">
+    <img src="https://fe-static.obs.cn-hz1.ctyun.cn/lottery/wrap-border-2.png" class="wrap-border wrap-border-2" alt="">
+    <img src="https://fe-static.obs.cn-hz1.ctyun.cn/lottery/wrap-border-3.png" class="wrap-border wrap-border-3" alt="">
+    <img src="https://fe-static.obs.cn-hz1.ctyun.cn/lottery/wrap-border-4.png" class="wrap-border wrap-border-4" alt="">
     <div id="container" ref="containerRef" class="3dContainer" />
   </div>
   <OptionButton
@@ -49,7 +47,7 @@ const { getTopTitle: topTitle, getTextColor: textColor, getTextSize: textSize } 
     :continue-lottery="continueLottery"
     :quit-lottery="quitLottery"
   />
-  <img :src="`${baseUrl}background0120.jpg`" class="w-full h-full" alt="">
+  <img src="https://fe-static.obs.cn-hz1.ctyun.cn/lottery/background0120.jpg" class="w-full h-full" alt="">
   <PrizeList class="absolute left-0 top-32" />
 
   <Dialog :open="visible" class="relative z-50" @close="handleClose">

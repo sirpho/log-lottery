@@ -65,7 +65,7 @@ export const defaultPrizeList = <IPrizeConfig[]>[
         picture: {
             id: '2',
             name: '三等奖',
-            url: `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/三等奖.png`,
+            url: `https://fe-static.obs.cn-hz1.ctyun.cn/lottery/VCG41158736202.jpg`,
         },
         separateCount: {
             enable: true,
@@ -87,7 +87,7 @@ export const defaultPrizeList = <IPrizeConfig[]>[
         picture: {
             id: '1',
             name: '二等奖',
-            url: `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/二等奖.png`,
+            url: `https://fe-static.obs.cn-hz1.ctyun.cn/lottery/VCG41158736202.jpg`,
         },
         separateCount: {
             enable: false,
@@ -109,7 +109,7 @@ export const defaultPrizeList = <IPrizeConfig[]>[
         picture: {
             id: '0',
             name: '一等奖',
-            url: `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/一等奖.png`,
+            url: `https://fe-static.obs.cn-hz1.ctyun.cn/lottery/VCG41158736202.jpg`,
         },
         separateCount: {
             enable: false,
@@ -131,7 +131,7 @@ export const defaultPrizeList = <IPrizeConfig[]>[
         picture: {
             id: '3',
             name: '超级奖',
-            url: `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/超级大奖.png`,
+            url: `https://fe-static.obs.cn-hz1.ctyun.cn/lottery/VCG41158736202.jpg`,
         },
         separateCount: {
             enable: false,
@@ -153,7 +153,7 @@ export const defaultPrizeList = <IPrizeConfig[]>[
         picture: {
             id: '4',
             name: '特别奖',
-            url: `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/特别奖.png`,
+            url: `https://fe-static.obs.cn-hz1.ctyun.cn/lottery/VCG41158736202.jpg`,
         },
         separateCount: {
             enable: false,
@@ -176,7 +176,7 @@ export const defaultCurrentPrize = <IPrizeConfig>{
     picture: {
         id: '2',
         name: '三等奖',
-        url: `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/三等奖.png`,
+        url: `https://fe-static.obs.cn-hz1.ctyun.cn/lottery/VCG41158736202.jpg`,
     },
     separateCount: {
         enable: true,
@@ -193,27 +193,27 @@ export const defaultImageList = [
     {
         id: '0',
         name: '一等奖',
-        url: `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/一等奖.png`,
+        url: `https://fe-static.obs.cn-hz1.ctyun.cn/lottery/VCG41158736202.jpg`,
     },
     {
         id: '1',
         name: '二等奖',
-        url: `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/二等奖.png`,
+        url: `https://fe-static.obs.cn-hz1.ctyun.cn/lottery/VCG41158736202.jpg`,
     },
     {
         id: '2',
         name: '三等奖',
-        url: `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/三等奖.png`,
+        url: `https://fe-static.obs.cn-hz1.ctyun.cn/lottery/VCG41158736202.jpg`,
     },
     {
         id: '3',
         name: '超级奖',
-        url: `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/超级大奖.png`,
+        url: `https://fe-static.obs.cn-hz1.ctyun.cn/lottery/VCG41158736202.jpg`,
     },
     {
         id: '4',
         name: '特别奖',
-        url: `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/特别奖.png`,
+        url: `https://fe-static.obs.cn-hz1.ctyun.cn/lottery/VCG41158736202.jpg`,
     },
 ]
 export const defaultPatternList = [21, 38, 55, 54, 53, 70, 87, 88, 89, 23, 40, 57, 74, 91, 92, 76, 59, 42, 25, 24, 27, 28, 29, 46, 63, 62, 61, 78, 95, 96, 97, 20, 19, 31, 48, 66, 67, 84, 101, 100, 32, 33, 93, 65, 82, 99]
