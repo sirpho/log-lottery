@@ -10,6 +10,8 @@ scp "$env:SIRPHO_DOCUMENT\sirpho\log-lottery\dist-file\dist.zip" jenkins@192.200
 
 ssh jenkins@192.200.2.90
 
+cd /usr/share/nginx/html/10.254.9.208/lottery
+
 unzip /usr/share/nginx/html/10.254.9.208/lottery/dist.zip
 
 ```
