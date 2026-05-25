@@ -104,15 +104,14 @@ export function useViewModel({ exportInputFileRef }: { exportInputFileRef: Ref<H
     }
     function downloadTemplate() {
         // 下载
-        const templateFileName = i18n.global.t('data.xlsxName')
-        const fileUrl = `${baseUrl}${templateFileName}`
+        const fileUrl = `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/人口登记表-zhCn.xlsx`
         fetch(fileUrl)
             .then(res => res.blob())
             .then((blob) => {
                 const url = window.URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
-                a.download = templateFileName
+                a.download = '人口登记表'
                 a.click()
                 toast.open({
                     message: t('error.downloadSuccess'),
@@ -123,43 +122,21 @@ export function useViewModel({ exportInputFileRef }: { exportInputFileRef: Ref<H
     }
     // 导出数据
     function exportData() {
-        let data = JSON.parse(JSON.stringify(allPersonList.value))
-        // 排除一些字段
-        for (let i = 0; i < data.length; i++) {
-            delete data[i].x
-            delete data[i].y
-            delete data[i].id
-            delete data[i].createTime
-            delete data[i].updateTime
-            delete data[i].prizeId
-            // 修改字段名称
-            if (data[i].isWin) {
-                data[i].isWin = i18n.global.t('data.yes')
-            }
-            else {
-                data[i].isWin = i18n.global.t('data.no')
-            }
-            // 格式化数组为
-            data[i].prizeTime = data[i].prizeTime.join(',')
-            data[i].prizeName = data[i].prizeName.join(',')
-        }
-        let dataString = JSON.stringify(data)
-        dataString = dataString
-            .replaceAll(/uid/g, i18n.global.t('data.number'))
-            .replaceAll(/isWin/g, i18n.global.t('data.isWin'))
-            .replaceAll(/department/g, i18n.global.t('data.department'))
-            .replaceAll(/name/g, i18n.global.t('data.name'))
-            .replaceAll(/identity/g, i18n.global.t('data.identity'))
-            .replaceAll(/prizeName/g, i18n.global.t('data.prizeName'))
-            .replaceAll(/prizeTime/g, i18n.global.t('data.prizeTime'))
+        const targetList = allPersonList.value.map(item => ({
+            [i18n.global.t('data.number')]: item.uid,
+            [i18n.global.t('data.name')]: item.name,
+            [i18n.global.t('data.department')]: item.department,
+            [i18n.global.t('data.identity')]: item.identity,
+            [i18n.global.t('data.isWin')]: item.isWin ? i18n.global.t('data.yes') : i18n.global.t('data.no'),
+            [i18n.global.t('data.prizeTime')]: item.prizeTime.join(','),
+            [i18n.global.t('data.prizeName')]: item.prizeName.join(','),
+        }))
 
-        data = JSON.parse(dataString)
-
-        if (data.length > 0) {
-            const dataBinary = XLSX.utils.json_to_sheet(data)
+        if (targetList.length > 0) {
+            const dataBinary = XLSX.utils.json_to_sheet(targetList)
             const dataBinaryBinary = XLSX.utils.book_new()
             XLSX.utils.book_append_sheet(dataBinaryBinary, dataBinary, 'Sheet1')
-            XLSX.writeFile(dataBinaryBinary, 'data.xlsx')
+            XLSX.writeFile(dataBinaryBinary, '导出数据.xlsx')
             toast.open({
                 message: t('error.exportSuccess'),
                 type: 'success',
