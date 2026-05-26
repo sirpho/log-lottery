@@ -34,15 +34,8 @@ export function useViewModel({ exportInputFileRef }: { exportInputFileRef: Ref<H
         identity: '',
     })
     async function getExcelTemplateContent() {
-        const locale = i18n.global.locale.value
-        if (locale === 'zhCn') {
-            const templateData = await readLocalFileAsArraybuffer(`${baseUrl}人口登记表-zhCn.xlsx`)
-            return templateData
-        }
-        else {
-            const templateData = await readLocalFileAsArraybuffer(`${baseUrl}personListTemplate-en.xlsx`)
-            return templateData
-        }
+        const fileUrl = `https://fe-static.obs.cn-hz1.ctyun.cn/sirpho/人口登记表-zhCn.xlsx`
+        return await readLocalFileAsArraybuffer(fileUrl)
     }
     /// 向worker发送消息
     function sendWorkerMessage(message: any) {
