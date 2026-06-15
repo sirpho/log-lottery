@@ -12,6 +12,8 @@ ssh jenkins@192.200.2.90
 
 cd /usr/share/nginx/html/10.254.9.208/lottery
 
+rm -rf ./assets ./css dog.svg  index.html  ./js  ./mp3  ./png  sw.js  vite.svg  ./wav
+
 unzip /usr/share/nginx/html/10.254.9.208/lottery/dist.zip
 
 ```
