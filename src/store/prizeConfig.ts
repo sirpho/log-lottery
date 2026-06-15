@@ -1,6 +1,7 @@
 import type { IPrizeConfig } from '@/types/storeType'
 import { defineStore } from 'pinia'
 import { defaultCurrentPrize, defaultPrizeList } from './data'
+import {cloneDeep} from "lodash-es";
 
 export const usePrizeConfig = defineStore('prize', {
     state() {
@@ -165,6 +166,14 @@ export const usePrizeConfig = defineStore('prize', {
                     designatedList: [],
                 } as IPrizeConfig,
             }
+        },
+        // 清空中奖信息
+        clearPrize() {
+            for (const item of this.prizeConfig.prizeList) {
+                item.isUsed = false
+                item.isUsedCount = 0
+            }
+            this.prizeConfig = cloneDeep(this.prizeConfig)
         },
     },
     persist: {

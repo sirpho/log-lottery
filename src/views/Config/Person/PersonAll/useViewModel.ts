@@ -18,11 +18,11 @@ type IBasePersonConfig = Pick<IPersonConfig, 'uid' | 'name' | 'department' | 'id
 
 export function useViewModel({ exportInputFileRef }: { exportInputFileRef: Ref<HTMLInputElement> }) {
     const { t } = useI18n()
-    const baseUrl = import.meta.env.BASE_URL.replace('./', '/')
     const toast = useToast()
     const worker: Worker | null = new ImportExcelWorker()
     const loading = inject(loadingKey)
     const personConfig = useStore().personConfig
+    const prizeConfig = useStore().prizeConfig
     const { getAllPersonList: allPersonList, getAlreadyPersonList: alreadyPersonList } = storeToRefs(personConfig)
     const tableColumnList = tableColumns({ handleDeletePerson: delPersonItem })
     const addPersonModalVisible = ref(false)
@@ -140,6 +140,7 @@ export function useViewModel({ exportInputFileRef }: { exportInputFileRef: Ref<H
 
     function resetData() {
         personConfig.resetAlreadyPerson()
+        prizeConfig.clearPrize()
     }
 
     function deleteAll() {
