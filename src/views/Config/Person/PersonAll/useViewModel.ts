@@ -68,6 +68,7 @@ export function useViewModel({ exportInputFileRef }: { exportInputFileRef: Ref<H
                     clearFileInput()
                 }
                 if (e.data.type === 'error') {
+                    loading?.hide()
                     if (e.data.message === 'not right template') {
                         toast.open({
                             message: t('error.excelFileError'),
